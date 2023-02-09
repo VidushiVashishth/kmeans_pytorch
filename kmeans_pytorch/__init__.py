@@ -56,6 +56,8 @@ def kmeans(
         pairwise_distance_function = partial(pairwise_distance, device=device, tqdm_flag=tqdm_flag)
     elif distance == 'cosine':
         pairwise_distance_function = partial(pairwise_cosine, device=device)
+    elif distance == 'l1':
+        pairwise_distance_function = partial(pairwise_l1_distance, device=device, tqdm_flag=tqdm_flag)
     elif distance == 'soft_dtw':
         sdtw = SoftDTW(use_cuda=device.type == 'cuda', gamma=gamma_for_soft_dtw)
         pairwise_distance_function = partial(pairwise_soft_dtw, sdtw=sdtw, device=device)
@@ -187,6 +189,22 @@ def pairwise_distance(data1, data2, device=torch.device('cpu'), tqdm_flag=True):
     dis = dis.sum(dim=-1).squeeze()
     return dis
 
+def pairwise_l1_distance(data1, data2, device=torch.device('cpu'), tqdm_flag=True):
+    if tqdm_flag:
+        print(f'device is :{device}')
+
+    data1, data2 = data1.to(device), data2.to(device)
+
+    # N*1*M
+    A = data1.unsqueeze(dim=1)
+
+    # 1*N*M
+    B = data2.unsqueeze(dim=0)
+
+    dis = (A - B)
+    # return N*N matrix for pairwise distance
+    dis = dis.sum(dim=-1).squeeze()
+    return dis
 
 def pairwise_cosine(data1, data2, device=torch.device('cpu')):
     # transfer to device
