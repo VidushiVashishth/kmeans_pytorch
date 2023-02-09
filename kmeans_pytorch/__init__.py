@@ -201,7 +201,7 @@ def pairwise_l1_distance(data1, data2, device=torch.device('cpu'), tqdm_flag=Tru
     # 1*N*M
     B = data2.unsqueeze(dim=0)
 
-    dis = (A - B)
+    dis = torch.FloatTensor.abs(A-B)
     # return N*N matrix for pairwise distance
     dis = dis.sum(dim=-1).squeeze()
     return dis

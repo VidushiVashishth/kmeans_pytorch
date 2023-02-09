@@ -26,14 +26,14 @@ for data_size in data_sizes:
 
     # gpu
     start_gpu = time()
-    kmeans_gpu = kmeans(X=x, num_clusters=num_clusters, device=torch.device('cuda:0'))
+    kmeans_gpu = kmeans(X=x, num_clusters=num_clusters, distance='l1', device=torch.device('cuda:0'))
     gpu_time = time() - start_gpu
     gpu_times.append(gpu_time)
     print(f'gpu time: {gpu_time}')
 
     # cpu
     start_cpu = time()
-    kmeans_cpu = kmeans(X=x, num_clusters=num_clusters, device=torch.device('cpu'))
+    kmeans_cpu = kmeans(X=x, num_clusters=num_clusters, distance='l1', device=torch.device('cpu'))
     cpu_time = time() - start_cpu
     cpu_times.append(cpu_time)
     print(f'cpu time: {cpu_time}')
