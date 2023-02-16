@@ -27,6 +27,7 @@ def initialize(X, num_clusters, seed):
 def kmeans(
         X,
         num_clusters,
+        sample_weights=None,
         distance='euclidean',
         cluster_centers=[],
         tol=1e-4,
@@ -65,10 +66,14 @@ def kmeans(
         raise NotImplementedError
 
     # convert to float
-    X = X.float()
+    #X = X.float()
 
-    # transfer to device
-    X = X.to(device)
+    if sample_weights is not None:
+        sample_weights = sample_weights.reshape((-1,1))
+        X = np.multiply(X, sample_weights)
+
+    X.squeeze()
+    X = torch.FloatTensor(X).cuda()
 
     # initialize
     if type(cluster_centers) == list:  # ToDo: make this less annoyingly weird
@@ -153,22 +158,21 @@ def kmeans_predict(
         pairwise_distance_function = partial(pairwise_distance, device=device, tqdm_flag=tqdm_flag)
     elif distance == 'cosine':
         pairwise_distance_function = partial(pairwise_cosine, device=device)
+    elif distance == 'l1':
+        pairwise_distance_function = partial(pairwise_l1_distance, device=device, tqdm_flag=tqdm_flag)
     elif distance == 'soft_dtw':
         sdtw = SoftDTW(use_cuda=device.type == 'cuda', gamma=gamma_for_soft_dtw)
         pairwise_distance_function = partial(pairwise_soft_dtw, sdtw=sdtw, device=device)
     else:
         raise NotImplementedError
 
-    # convert to float
-    X = X.float()
-
     # transfer to device
-    X = X.to(device)
+    X = torch.FloatTensor(X).cuda()
 
     dis = pairwise_distance_function(X, cluster_centers)
     choice_cluster = torch.argmin(dis, dim=1)
 
-    return choice_cluster.cpu()
+    return choice_cluster
 
 
 def pairwise_distance(data1, data2, device=torch.device('cpu'), tqdm_flag=True):
@@ -193,17 +197,20 @@ def pairwise_l1_distance(data1, data2, device=torch.device('cpu'), tqdm_flag=Tru
     if tqdm_flag:
         print(f'device is :{device}')
 
-    data1, data2 = data1.to(device), data2.to(device)
+    torch.cuda.empty_cache()
+    #data1, data2 = data1.to(device), data2.to(device)
 
     # N*1*M
     A = data1.unsqueeze(dim=1)
-
     # 1*N*M
     B = data2.unsqueeze(dim=0)
 
-    dis = torch.FloatTensor.abs(A-B)
+    A = A.cpu()
+    B = B.cpu()
+    dis = torch.abs(A-B)
+
     # return N*N matrix for pairwise distance
-    dis = dis.sum(dim=-1).squeeze()
+    dis = dis.sum(dim=-1).squeeze().to(device)
     return dis
 
 def pairwise_cosine(data1, data2, device=torch.device('cpu')):
