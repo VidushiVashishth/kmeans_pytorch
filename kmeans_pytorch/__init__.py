@@ -168,10 +168,14 @@ def kmeans_predict(
 
     # transfer to device
     X = torch.FloatTensor(X).cuda()
+    # print("passed float conversion")
+    # X = X.float()
+
+    # X = X.to(device)
 
     dis = pairwise_distance_function(X, cluster_centers)
     choice_cluster = torch.argmin(dis, dim=1)
-
+    # print("predicted cluster ", choice_cluster)
     return choice_cluster
 
 
